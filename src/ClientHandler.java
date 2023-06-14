@@ -6,47 +6,52 @@ import java.util.NoSuchElementException;
 import java.util.Scanner;
 import java.util.Set;
 
-public class Action implements Runnable{
+public class ClientHandler implements Runnable{
     private String name;
     private final Scanner sc;
     private final Writer writer;
     private final Socket socket;
-    private boolean isConnect;
-    private static Set<Action> clients;
 
-    public Action(Socket socket, Server server) throws IOException {
+    private Server server;
+
+
+    public ClientHandler(Socket socket, Server server) throws IOException {
         this.name = giveName();
         this.sc = getReader(socket);
         this.writer = getWriter(socket);
         this.socket = socket;
-        this.isConnect = true;
-        this.clients = new HashSet<>();
+        this.server = server;
     }
+
+
 
     @Override
     public void run() {
         System.out.printf("Connected new user: %s%n", name );
         try(socket; sc; writer){
             sendResponse("Hi " + name);
-            mailingList("Client " + name + " has connected");
-            while (isConnect && !socket.isClosed()){
+            sendToAll("Client " + name + " has connected");
+            while (!socket.isClosed()){
                 var message = sc.nextLine().strip();
                 if(isQuitMsg(message)){
                     System.out.printf("Client %s is disconnected", name );
+                    sendToAll(name + " has disconnected");
                     break;
                 }else if(isEmptyMsg(message)){
-                    System.out.printf("Empty message");
-                }else  mailingList(name + " : " + message);
+                    System.out.println("Empty message");
+                }else  sendToAll(name + " : " + message);
             }
         }catch (NoSuchElementException e){
-            mailingList("Client " + name + " is disconnected\n");
+            sendToAll("Client " + name + " is disconnected\n");
         } catch (IOException e){
             e.printStackTrace();
         }
     }
 
-    private void mailingList(String response){
-      getClients().forEach(c -> {
+
+
+    private void sendToAll(String response){
+      server.getClients().forEach(c -> {
             if (c != this) {
                 try {
                     c.sendResponse(response);
@@ -57,9 +62,9 @@ public class Action implements Runnable{
         });
     }
 
-    public static Action connectClient(Socket socket, Server server) {
+    public static ClientHandler connectClient(Socket socket, Server server) {
         try {
-            return new Action(socket, server);
+            return new ClientHandler(socket, server);
         } catch (IOException e) {
             e.printStackTrace();
             return null;
@@ -109,7 +114,4 @@ public class Action implements Runnable{
         return builder.toString();
     }
 
-    public  Set<Action> getClients() {
-        return clients;
-    }
 }
