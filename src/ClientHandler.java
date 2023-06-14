@@ -1,18 +1,14 @@
 import java.io.*;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
-import java.util.HashSet;
-import java.util.NoSuchElementException;
-import java.util.Scanner;
-import java.util.Set;
+import java.util.*;
 
 public class ClientHandler implements Runnable{
-    private String name;
+    private final String name;
     private final Scanner sc;
     private final Writer writer;
     private final Socket socket;
-
-    private Server server;
+    private final Server server;
 
 
     public ClientHandler(Socket socket, Server server) throws IOException {
@@ -47,7 +43,6 @@ public class ClientHandler implements Runnable{
             e.printStackTrace();
         }
     }
-
 
 
     private void sendToAll(String response){
